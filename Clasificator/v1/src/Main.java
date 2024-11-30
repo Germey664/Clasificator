@@ -1,3 +1,7 @@
+import functions.FunctionPoint;
+import functions.LinkedListTabulatedFunction;
+import functions.TabulatedFunction;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
@@ -11,66 +15,104 @@ public class Main {
      * n - номер анализирумого параметра;
      * k - количество возможных значений параметра;
      * parmVer[][] - вернет полученную зависимость;*/
-    public static void getAnalyze(int[][] dataset, int n, int k, double[][] parmVer){
-        int[] dataDead= new int[k];//Умер при значении параметра = k
-        int[] dataSurv= new int[k];//Выжил при значении параметра = k
-        for(int i = 0; i < dataset.length; i++ ){
-            if(dataset[i][dataset[0].length-1] == 1){
-                dataSurv[dataset[i][n]-1]++;
-            }else{
-                dataDead[dataset[i][n]-1]++;
+    public static void getAnalyze(double[][] dataset, int n, TabulatedFunction[] parmVer){
+        int countDifNumber = 0;//поиск уникальных значений параметра
+        double[] arrayDifNumber = new double[1024];
+
+        for(int j = 0; j < dataset.length; j++){
+            boolean check = true;
+            for(int i = 0; i <= countDifNumber; i++){
+                if(Double.compare(dataset[j][n],arrayDifNumber[i]) == 0)
+                    check = false;
+            }
+            if(check) {
+                arrayDifNumber[countDifNumber] = dataset[j][n];
+                countDifNumber++;
             }
         }
-        for(int i = 0; i < k; i++) {
-            int dataAll = dataDead[i] + dataSurv[i];
-            double dead = (dataDead[i] / 1.0d / dataAll);
-            dead = ((int)(dead* 100))/100d;
-            double surv = dataSurv[i] / 1.0d / dataAll;
-            surv = ((int)(surv * 100))/100d;
-            parmVer[n][i] = surv;
-            System.out.print("["+(i+1)+"]:"+dataAll+" "+surv+"/"+dead+" ");
+        for (int out = countDifNumber - 1; out >= 1; out--){ //сортировка значений
+            for (int i = 0; i < out; i++){
+                if(Double.compare(arrayDifNumber[i], arrayDifNumber[i + 1]) > 0){
+                    double buf =  arrayDifNumber[i];
+                    arrayDifNumber[i] = arrayDifNumber[i + 1];
+                    arrayDifNumber[i + 1] = buf;
+                }
+            }
         }
+        FunctionPoint [] arrayPointsAlive = new FunctionPoint[countDifNumber]; //Количество раз которое выжил при значении x
+        FunctionPoint [] arrayPointsDead = new FunctionPoint[countDifNumber]; //Количество раз которое умер при значении x
+        for(int i = 0; i < countDifNumber; i++) {
+            arrayPointsAlive[i] = new FunctionPoint(arrayDifNumber[i], 0);
+            arrayPointsDead[i] = new FunctionPoint(arrayDifNumber[i], 0);
+        }
+
+        for (int j = 0; j < dataset.length; j++) {
+            for (int i = 0; i < countDifNumber; i++) {
+                if (Double.compare(dataset[j][n], arrayPointsAlive[i].getX()) == 0) {//Если значение параметра действия совпало со значением x
+                    if (Double.compare(dataset[j][dataset[0].length - 1], 1) == 0) {//Тогда проверяем выжил или умер
+                        arrayPointsAlive[i].setY(arrayPointsAlive[i].getY() + 1);
+                    } else {
+                        arrayPointsDead[i].setY(arrayPointsDead[i].getY() + 1);
+                    }
+                }
+            }
+        }
+        FunctionPoint[] pointsResults = new FunctionPoint[countDifNumber];
+        System.out.println("Get analyze");
+        for(int i = 0; i < countDifNumber; i++) {
+            double dataAll = arrayPointsAlive[i].getY() + arrayPointsDead[i].getY();
+            double dead = arrayPointsDead[i].getY() / dataAll;
+            double alive = arrayPointsAlive[i].getY() / dataAll;
+            pointsResults[i] = new FunctionPoint(arrayDifNumber[i],alive);
+            System.out.print("["+arrayDifNumber[i]+"]:"+dataAll+" "+(float)alive+"/"+(float)dead+" ");
+        }
+        parmVer[n] = new LinkedListTabulatedFunction(pointsResults);
         System.out.println();
+        System.out.println("---------------------");
+
     }
     /** Растягивает амплитуду до 1;
      * parametr - входное значение;
      * AmplitudeParm - на выход;*/
-    public static void analyze(double[] parametr, double[] AmplitudeParm){
-        double max = parametr[0];
-        double min = parametr[0];
-        for(int i = 0; i < parametr.length; i++){
-            if(parametr[i] > max)  max = parametr[i];
-            if(parametr[i] < min) min = parametr[i];
+    public static TabulatedFunction analyze(TabulatedFunction parametr) throws CloneNotSupportedException {
+        double max = parametr.getPoint(0).getY();
+        double min = parametr.getPoint(0).getY();
+        for(int i = 0; i < parametr.getPointsCount(); i++){
+            double y = parametr.getPoint(i).getY();
+            if(Double.compare(y, max) > 0)  max = y;
+            if(Double.compare(y, min) < 0)  min = y;
         }
-
-        for(int i = 0; i < parametr.length; i++) {
-            AmplitudeParm[i] = parametr[i] / max;
-            AmplitudeParm[i] = ((int)(AmplitudeParm[i]* 100))/100d;
-            System.out.print(AmplitudeParm[i]+" ");
+        FunctionPoint[] pointsResults = new FunctionPoint[parametr.getPointsCount()];
+        for(int i = 0; i < parametr.getPointsCount(); i++) {
+            pointsResults[i] = new FunctionPoint(parametr.getPoint(i).getX(),parametr.getPoint(i).getY() / max);
+            System.out.print(pointsResults[i].getY()+" ");
         }
+        TabulatedFunction amplitudeParm = new LinkedListTabulatedFunction(pointsResults);
         System.out.println();
+        return  amplitudeParm;
     }
     /** Тестирование работы алгоритма.*/
-    public static void  Test(int[][] dataBase, double[][] parametr){
-        double Ver = 1;
-        int errors = 0;
-        int correctPlus = 0;
-        int allPlus = 0;
+    public static void  Test(double[][] dataBase, TabulatedFunction[] parametr){
+        double Ver = 1; //Вероятность
+        int errors = 0; //Ошибки
+        int correctPlus = 0; //Количество правильных прогнозов жизни
+        int allPlus = 0; // Общие количество прогнозов жизни
 
         for(int i = 0; i < dataBase.length; i++){
             Ver = 1;
             boolean check = true;
             for(int i2 = 0; i2 < parametr.length; i2++){
-                Ver *= parametr[i2][dataBase[i][i2]-1];
+                Ver *= parametr[i2].getFunctionValue(dataBase[i][i2]);
             }
-            if(dataBase[i][dataBase[0].length - 1] != 0 || Ver > 0.01) {
+            if(Double.compare(dataBase[i][dataBase[0].length - 1], 0) != 0 || Double.compare(Ver, 0.01) > 0) {
                 if (dataBase[i][dataBase[0].length - 1] == 1)
                     allPlus++;
-                if ((Ver >= 0.3 && dataBase[i][dataBase[0].length - 1] == 0) || (Ver < 0.3 && dataBase[i][dataBase[0].length - 1] == 1)) {
+                if ((Double.compare(Ver, 0.3) >= 0 && Double.compare(dataBase[i][dataBase[0].length - 1],0) == 0)
+                        ||(Double.compare(Ver, 0.3)< 0 && Double.compare(dataBase[i][dataBase[0].length - 1], 1) == 0)) {
                     errors++;
                     check = false;
                 }
-                if (Ver >= 0.3 && dataBase[i][dataBase[0].length - 1] == 1) {
+                if (Double.compare(Ver, 0.3)>=0 && Double.compare(dataBase[i][dataBase[0].length - 1], 1) == 0) {
                     correctPlus++;
                 }
                 System.out.println("Жив или мертв " + Ver + " " + dataBase[i][dataBase[0].length - 1]+ " "+ (check));
@@ -85,7 +127,7 @@ public class Main {
      * 3 - случайный, от него ничего не зависит;
      * 4 - монетка. Выжил или нет;
      * 5 - случайность. Чем больше число тем ниже шансы выжить;*/
-    public static void initDataSet(int[][] dataset){
+    public static void initDataSet(double[][] dataset){
         int v1, v2, v3, v4, v5;
         int surv = 1;
         for(int i =  0; i < dataset.length; i++){
@@ -110,26 +152,26 @@ public class Main {
 
         }
     }
-    public static void main(String[] args) {
+    public static void main(String[] args) throws CloneNotSupportedException {
         /** Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
-        int[][] dataset = new int[1000][6];
+        double[][] dataset = new double[1000][6];
         initDataSet(dataset);
         /** Зависимость вероятности от значения. [i][j] i - количество параметров. j - количество возможных значений*/
-        double[][] parmSurvVer = new double[5][6];
+        TabulatedFunction[] parmSurvVer = new LinkedListTabulatedFunction[5];
         /** Нормализованное значение вероятности*/
-        double[][] AmplitudeParm = new double[5][6];
-        getAnalyze(dataset,0,6, parmSurvVer);
-        getAnalyze(dataset,1,6, parmSurvVer);
-        getAnalyze(dataset,2,6, parmSurvVer);
-        getAnalyze(dataset,3,2, parmSurvVer);
-        getAnalyze(dataset,4,6, parmSurvVer);
+        TabulatedFunction[] AmplitudeParm = new TabulatedFunction[5];
+        getAnalyze(dataset,0, parmSurvVer);
+        getAnalyze(dataset,1, parmSurvVer);
+        getAnalyze(dataset,2, parmSurvVer);
+        getAnalyze(dataset,3, parmSurvVer);
+        getAnalyze(dataset,4, parmSurvVer);
 
-        analyze(parmSurvVer[0], AmplitudeParm[0]);
-        analyze(parmSurvVer[1], AmplitudeParm[1]);
-        analyze(parmSurvVer[2], AmplitudeParm[2]);
-        analyze(parmSurvVer[3], AmplitudeParm[3]);
-        analyze(parmSurvVer[4], AmplitudeParm[4]);
-        int[][] datasetTest = new int[100][6];
+        AmplitudeParm[0] = analyze(parmSurvVer[0]);
+        AmplitudeParm[1] = analyze(parmSurvVer[1]);
+        AmplitudeParm[2] = analyze(parmSurvVer[2]);
+        AmplitudeParm[3] = analyze(parmSurvVer[3]);
+        AmplitudeParm[4] = analyze(parmSurvVer[4]);
+        double[][] datasetTest = new double[100][6];
         initDataSet(datasetTest);
         Test(datasetTest, AmplitudeParm);
     }
