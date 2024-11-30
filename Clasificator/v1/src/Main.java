@@ -1,13 +1,19 @@
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
+    /** Случайное число от min до max;*/
     public static int getRanNumber(int min, int max)
     {
         return (int) (Math.random() * (max+1 - min) + min);
     }
-    public static int getAnalyze(int[][] dataset, int n, int k, double[][] parmVer){
-        int[] dataDead= new int[k];
-        int[] dataSurv= new int[k];
+    /** Анализ зависимости вероятности выживания от значения параметра;
+     * dataset[i][j] - набор действий количеством i. Параметров + результат = j;
+     * n - номер анализирумого параметра;
+     * k - количество возможных значений параметра;
+     * parmVer[][] - вернет полученную зависимость;*/
+    public static void getAnalyze(int[][] dataset, int n, int k, double[][] parmVer){
+        int[] dataDead= new int[k];//Умер при значении параметра = k
+        int[] dataSurv= new int[k];//Выжил при значении параметра = k
         for(int i = 0; i < dataset.length; i++ ){
             if(dataset[i][dataset[0].length-1] == 1){
                 dataSurv[dataset[i][n]-1]++;
@@ -25,8 +31,10 @@ public class Main {
             System.out.print("["+(i+1)+"]:"+dataAll+" "+surv+"/"+dead+" ");
         }
         System.out.println();
-        return 0;
     }
+    /** Растягивает амплитуду до 1;
+     * parametr - входное значение;
+     * AmplitudeParm - на выход;*/
     public static void analyze(double[] parametr, double[] AmplitudeParm){
         double max = parametr[0];
         double min = parametr[0];
@@ -42,6 +50,7 @@ public class Main {
         }
         System.out.println();
     }
+    /** Тестирование работы алгоритма.*/
     public static void  Test(int[][] dataBase, double[][] parametr){
         double Ver = 1;
         int errors = 0;
@@ -71,6 +80,11 @@ public class Main {
         System.out.println("Errors/All "+ errors +" " + dataBase.length+ " " + correctPlus+" "+ allPlus );
 
     }
+    /** Заполняет массив примером операций. 5 - параметров. 1 - результат;
+     * 1 и 2 - сумма костей больше или равно 8 = выжил;
+     * 3 - случайный, от него ничего не зависит;
+     * 4 - монетка. Выжил или нет;
+     * 5 - случайность. Чем больше число тем ниже шансы выжить;*/
     public static void initDataSet(int[][] dataset){
         int v1, v2, v3, v4, v5;
         int surv = 1;
@@ -97,9 +111,12 @@ public class Main {
         }
     }
     public static void main(String[] args) {
+        /** Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
         int[][] dataset = new int[1000][6];
         initDataSet(dataset);
+        /** Зависимость вероятности от значения. [i][j] i - количество параметров. j - количество возможных значений*/
         double[][] parmSurvVer = new double[5][6];
+        /** Нормализованное значение вероятности*/
         double[][] AmplitudeParm = new double[5][6];
         getAnalyze(dataset,0,6, parmSurvVer);
         getAnalyze(dataset,1,6, parmSurvVer);
