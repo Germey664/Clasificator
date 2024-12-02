@@ -1,6 +1,7 @@
-import functions.FunctionPoint;
 import functions.LinkedListTabulatedFunction;
 import functions.TabulatedFunction;
+
+import Сlassification.TeСlassification;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -9,87 +10,6 @@ public class Main {
     public static int getRanNumber(int min, int max)
     {
         return (int) (Math.random() * (max+1 - min) + min);
-    }
-    /** Анализ зависимости вероятности выживания от значения параметра;
-     * dataset[i][j] - набор действий количеством i. Параметров + результат = j;
-     * n - номер анализирумого параметра;
-     * k - количество возможных значений параметра;
-     * parmVer[][] - вернет полученную зависимость;*/
-    public static void getAnalyze(double[][] dataset, int n, TabulatedFunction[] parmVer){
-        int countDifNumber = 0;//поиск уникальных значений параметра
-        double[] arrayDifNumber = new double[1024];
-
-        for(int j = 0; j < dataset.length; j++){
-            boolean check = true;
-            for(int i = 0; i <= countDifNumber; i++){
-                if(Double.compare(dataset[j][n],arrayDifNumber[i]) == 0)
-                    check = false;
-            }
-            if(check) {
-                arrayDifNumber[countDifNumber] = dataset[j][n];
-                countDifNumber++;
-            }
-        }
-        for (int out = countDifNumber - 1; out >= 1; out--){ //сортировка значений
-            for (int i = 0; i < out; i++){
-                if(Double.compare(arrayDifNumber[i], arrayDifNumber[i + 1]) > 0){
-                    double buf =  arrayDifNumber[i];
-                    arrayDifNumber[i] = arrayDifNumber[i + 1];
-                    arrayDifNumber[i + 1] = buf;
-                }
-            }
-        }
-        FunctionPoint [] arrayPointsAlive = new FunctionPoint[countDifNumber]; //Количество раз которое выжил при значении x
-        FunctionPoint [] arrayPointsDead = new FunctionPoint[countDifNumber]; //Количество раз которое умер при значении x
-        for(int i = 0; i < countDifNumber; i++) {
-            arrayPointsAlive[i] = new FunctionPoint(arrayDifNumber[i], 0);
-            arrayPointsDead[i] = new FunctionPoint(arrayDifNumber[i], 0);
-        }
-
-        for (int j = 0; j < dataset.length; j++) {
-            for (int i = 0; i < countDifNumber; i++) {
-                if (Double.compare(dataset[j][n], arrayPointsAlive[i].getX()) == 0) {//Если значение параметра действия совпало со значением x
-                    if (Double.compare(dataset[j][dataset[0].length - 1], 1) == 0) {//Тогда проверяем выжил или умер
-                        arrayPointsAlive[i].setY(arrayPointsAlive[i].getY() + 1);
-                    } else {
-                        arrayPointsDead[i].setY(arrayPointsDead[i].getY() + 1);
-                    }
-                }
-            }
-        }
-        FunctionPoint[] pointsResults = new FunctionPoint[countDifNumber];
-        System.out.println("Get analyze");
-        for(int i = 0; i < countDifNumber; i++) {
-            double dataAll = arrayPointsAlive[i].getY() + arrayPointsDead[i].getY();
-            double dead = arrayPointsDead[i].getY() / dataAll;
-            double alive = arrayPointsAlive[i].getY() / dataAll;
-            pointsResults[i] = new FunctionPoint(arrayDifNumber[i],alive);
-            System.out.print("["+arrayDifNumber[i]+"]:"+dataAll+" "+(float)alive+"/"+(float)dead+" ");
-        }
-        parmVer[n] = new LinkedListTabulatedFunction(pointsResults);
-        System.out.println();
-        System.out.println("---------------------");
-
-    }
-    /** Растягивает амплитуду до 1;
-     * parametr - входное значение;
-     * AmplitudeParm - на выход;*/
-    public static TabulatedFunction analyze(TabulatedFunction parametr) throws CloneNotSupportedException {
-        double max = parametr.getPoint(0).getY();
-        double min = parametr.getPoint(0).getY();
-        for(int i = 0; i < parametr.getPointsCount(); i++){
-            double y = parametr.getPoint(i).getY();
-            if(Double.compare(y, max) > 0)  max = y;
-            if(Double.compare(y, min) < 0)  min = y;
-        }
-        FunctionPoint[] pointsResults = new FunctionPoint[parametr.getPointsCount()];
-        for(int i = 0; i < parametr.getPointsCount(); i++) {
-            pointsResults[i] = new FunctionPoint(parametr.getPoint(i).getX(),parametr.getPoint(i).getY() / max);
-            System.out.print(pointsResults[i].getY()+" ");
-        }
-        TabulatedFunction amplitudeParm = new LinkedListTabulatedFunction(pointsResults);
-        System.out.println();
-        return  amplitudeParm;
     }
     /** Тестирование работы алгоритма.*/
     public static void  Test(double[][] dataBase, TabulatedFunction[] parametr){
@@ -154,17 +74,27 @@ public class Main {
     }
     public static void main(String[] args) throws CloneNotSupportedException {
         /** Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
-        double[][] dataset = new double[1000][6];
+        double[][] dataset = new double[1000][5+2];
+        /*
+        [] [{double p1, p2, p3, p4, p5}{double com1, com2, com3, com4, ..., comN}];
+        N = UniqueValue1 * UniqueValue1 * ...; Количество комбинаций. Уникальное значения действия 1  * Уникальное значения действия 2 ...
+         int a = 1;
+         int com = option1;//Выбор действия
+         for()
+            com += a*optionI;
+            a *= uniqueValueI;
+         */
         initDataSet(dataset);
         /** Зависимость вероятности от значения. [i][j] i - количество параметров. j - количество возможных значений*/
         TabulatedFunction[] parmSurvVer = new LinkedListTabulatedFunction[5];
         /** Нормализованное значение вероятности*/
         TabulatedFunction[] AmplitudeParm = new TabulatedFunction[5];
-        getAnalyze(dataset,0, parmSurvVer);
-        getAnalyze(dataset,1, parmSurvVer);
-        getAnalyze(dataset,2, parmSurvVer);
-        getAnalyze(dataset,3, parmSurvVer);
-        getAnalyze(dataset,4, parmSurvVer);
+        TeСlassification teСlassification = new TeСlassification();
+        teСlassification.getAnalyze(dataset,0, parmSurvVer);
+        teСlassification.getAnalyze(dataset,1, parmSurvVer);
+        teСlassification.getAnalyze(dataset,2, parmSurvVer);
+        teСlassification.getAnalyze(dataset,3, parmSurvVer);
+        teСlassification.getAnalyze(dataset,4, parmSurvVer);
 
         AmplitudeParm[0] = analyze(parmSurvVer[0]);
         AmplitudeParm[1] = analyze(parmSurvVer[1]);
