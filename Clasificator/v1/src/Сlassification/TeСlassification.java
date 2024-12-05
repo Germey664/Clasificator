@@ -1,28 +1,40 @@
 package Сlassification;
 
 import functions.FunctionPoint;
+import functions.InappropriateFunctionPointException;
 import functions.LinkedListTabulatedFunction;
 import functions.TabulatedFunction;
 
 public class TeСlassification {
     private final int COUNT_MINIMAL_UNIQUE_VALUE = 3;
-    private final int ALTER_INFINITY = 10000000;
+    private final int ALTER_INFINITY = 1000000;
 
-    private int countParametrs;
-    public TeСlassification(int countParametrs){
-        this.countParametrs = countParametrs;
+    private int countParam;
+    private int countCombination;
+    public TeСlassification(int countParam, int countCombination){
+        this.countParam = countParam;
+        this.countCombination = countCombination;
     }
     /** Анализ зависимости вероятности выживания от значения параметра;
      * dataset[i][j] - набор действий количеством i. Параметров + результат = j;
      * Результат вида суммарное количество применений комбинации параметров, ...
-     * n - номер анализируемого параметра;
-     * parmVer[][] - вернет полученную зависимость;*/
-    public void getAnalyze(double[][] dataset, int n, TabulatedFunction[] parmVer){
+     * m - номер анализируемого комбинации;
+     * paramVer[][] - вернет полученную зависимость;*/
+    public void getAnalyze(double[][] dataset, int m, TabulatedFunction[][] paramVer){
         /*Если значение одно, то функция, константа
         * На границах определения функция всегда прямая
         * Точка считается таковой если, ее параметр встречался больше минимального количество раз
         * Если точка таковая, то для любого уникального значения можно построить функцию*/
-
+        paramVer[1][0] = getAnalyzeToValue(dataset,0,countParam + 2 * 1);//Комбинация номер 1
+        System.out.println(paramVer[1][0].toString());
+        paramVer[1][1] = getAnalyzeToValue(dataset,1,countParam + 2 * 1);
+        System.out.println(paramVer[1][1].toString());
+        paramVer[1][2] = getAnalyzeToValue(dataset,2,countParam + 2 * 1);
+        System.out.println(paramVer[1][2].toString());
+        paramVer[1][3] = getAnalyzeToValue(dataset,3,countParam + 2 * 1);
+        System.out.println(paramVer[1][3].toString());
+        paramVer[1][4] = getAnalyzeToValue(dataset,4,countParam + 2 * 1);
+        System.out.println(paramVer[1][4].toString());
 
 
     }
@@ -49,7 +61,7 @@ public class TeСlassification {
         for (int j = 0; j < dataset.length; j++) {
             for (int i = 0; i < countUniqueNumber; i++) {
                 if (Double.compare(dataset[j][n], arrayPoints[i][0]) == 0) {//Если нашел параметр из действия
-                    for(int iOption = countParametrs; iOption < dataset[0].length; iOption+=2){
+                    for(int iOption = countParam; iOption < dataset[0].length; iOption+=2){
                         arrayPoints[i][1] += dataset[j][iOption];
                     }
                     // Считаем сколько раз произошла активация этого значения при этом параметре
@@ -67,12 +79,18 @@ public class TeСlassification {
         TabulatedFunction parmVer;
         if(countUniqueNumber == 1){//Параметр константа
             parmVer = new LinkedListTabulatedFunction(new FunctionPoint[]{
-                    new FunctionPoint(-ALTER_INFINITY,pointsResults[0].getY()),
+                    new FunctionPoint(-ALTER_INFINITY,0),
                     new FunctionPoint(pointsResults[0]),
-                    new FunctionPoint(ALTER_INFINITY,pointsResults[0].getY())
+                    new FunctionPoint(ALTER_INFINITY,0)
             });
         }else{
             parmVer = new LinkedListTabulatedFunction(pointsResults);
+            try {
+                parmVer.addPoint(new FunctionPoint(-ALTER_INFINITY,0));
+                parmVer.addPoint(new FunctionPoint(ALTER_INFINITY,0));
+            } catch (InappropriateFunctionPointException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return parmVer;
@@ -136,8 +154,8 @@ public class TeСlassification {
      * с суммаризацией результатов по типу комбинаций параметров;
      * [параметры][комбинации {сумма}{положительная1};{сумма2}{положительная2}]*/
     public double[][] SummaryArray(double[][] dataset){
-        int countOptions = dataset[0].length - countParametrs;// количество комбинаций записанных в массив
-        double[][] array = new double[dataset.length][countParametrs + countOptions*2];
+        int countOptions = dataset[0].length - countParam;// количество комбинаций записанных в массив
+        double[][] array = new double[dataset.length][countParam + countOptions*2];
         int countActiveArray = 0;
         /*В array будут записаны все уникальные поп параметрам операции. Вместо единичной активации.
         *Будут храниться 2 новых опции. Сумма всех активаций и только положительные.
@@ -146,7 +164,7 @@ public class TeСlassification {
             boolean checkFind = false;//Нашли такую же в уже занесенных?
             for(int iArray = 0; iArray < countActiveArray; iArray++){//Перебор по операциям уже занесенным
                 boolean checkParamters = true;//Они одинаковы?
-                for(int iParametr = 0;iParametr < countParametrs; iParametr++){//Сравнение параметров
+                for(int iParametr = 0; iParametr < countParam; iParametr++){//Сравнение параметров
                     if(Double.compare(dataset[iSet][iParametr], array[iArray][iParametr]) != 0){
                         checkParamters = false;
                         break;
@@ -155,38 +173,55 @@ public class TeСlassification {
                 if(checkParamters) {//Операция уже занесена. dataset[iSet] == array[iArray]
                     checkFind = true;
                     for(int i = 0; i  < countOptions; i++){//Добавляем сумму
-                        array[iArray][i*2+countParametrs] += dataset[iSet][i+countParametrs];//Сумма
-                        if(Double.compare(dataset[iSet][i+countParametrs],0) > 0)
-                            array[iArray][i*2+countParametrs+1] += dataset[iSet][i+countParametrs];//Положительная часть
+                        array[iArray][i*2+ countParam] += dataset[iSet][i+ countParam];//Сумма
+                        if(Double.compare(dataset[iSet][i+ countParam],0) > 0)
+                            array[iArray][i*2+ countParam +1] += dataset[iSet][i+ countParam];//Положительная часть
                     }
                     break;
                 }
             }
             if(!checkFind){//Добавляем новую операцию в массив
-                for(int i = 0; i  < countParametrs; i++){//копируем параметры
+                for(int i = 0; i  < countParam; i++){//копируем параметры
                     array[countActiveArray][i]= dataset[iSet][i];
                 }
                 for(int i = 0; i  < countOptions; i++){//Добавляем сумму
-                    array[countActiveArray][i*2+countParametrs] += dataset[iSet][i+countParametrs];//Сумма
-                    if(Double.compare(dataset[iSet][i+countParametrs],0) > 0)
-                        array[countActiveArray][i*2+countParametrs+1] += dataset[iSet][i+countParametrs];//Положительная часть
+                    array[countActiveArray][i*2+ countParam] += dataset[iSet][i+ countParam];//Сумма
+                    if(Double.compare(dataset[iSet][i+ countParam],0) > 0)
+                        array[countActiveArray][i*2+ countParam +1] += dataset[iSet][i+ countParam];//Положительная часть
                 }
                 countActiveArray++;
             }
             //Операция уже занесена
 
         }
-        double[][] arrayResult = new double[countActiveArray][countParametrs+countOptions*2];
+        double[][] arrayResult = new double[countActiveArray][countParam +countOptions*2];
         for(int i = 0; i < countActiveArray; i++)
             arrayResult[i] = array[i];
         return arrayResult;
     }
 
+
+    public static int getCountCombinationOption(int[] arrayCountCombination){
+        int combination = 1;
+        for(int i = 0; i  < arrayCountCombination.length; i++){
+            combination *= arrayCountCombination[i];
+        }
+        return combination;
+    }
+    public static int getCombinationOption(int[] arrayCountCombination, int[] arrayCombination){
+        int combination = 1;
+        int m = 1;
+        for(int i = 0; i  < arrayCountCombination.length; i++){
+            combination *= m * arrayCombination[i]; // 01 + o2*s1 + o3*s1*s2
+            m *= arrayCountCombination[i];
+        }
+        return combination;
+    }
     /** Растягивает амплитуду до 1;
      * parametr - входное значение;
      * AmplitudeParm - на выход;*/
 
-    public static TabulatedFunction analyze(TabulatedFunction parametr) throws CloneNotSupportedException {
+    public TabulatedFunction analyze(TabulatedFunction parametr) throws CloneNotSupportedException {
         double max = parametr.getPoint(0).getY();
         double min = parametr.getPoint(0).getY();
         for(int i = 0; i < parametr.getPointsCount(); i++){
