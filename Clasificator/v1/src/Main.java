@@ -83,7 +83,7 @@ public class Main {
         int arrayCountCombination[] = new int[]{2};//сколько значений может принимать действие
         int countCombination = TeСlassification.getCountCombinationOption(arrayCountCombination);
         /* Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
-        double[][] dataset = new double[100][countParam+countCombination];
+        double[][] dataset = new double[20][countParam+countCombination];
         initDataSet(dataset, arrayCountCombination);
         /*
         [] [{p1, p2, p3, p4, p5}{com1, com2, com3, com4, ..., comN}];
@@ -98,6 +98,7 @@ public class Main {
         dataset = teСlassification.SummaryArray(dataset);//Преобразование массива с данными. Добавляет новые поля.
         //System.out.println("Array: \n"+FunctionsArray.getStringArray(dataset,5));
         Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
+        dataset1.addOperation(dataset);
         dataset1.addOperation(dataset);
 
 

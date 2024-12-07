@@ -3,20 +3,20 @@ package Сlassification;
 public class Dataset {
     private int arraySizeMax = 10;//Сколько по стандарту должен иметь размер 1 массив.
     private int coountReserveOperation = 5; //Сколько оставлять пустых операций, для последующих операций.
+    private int length;//Количество хранящихся операций
+    private int lengthList;//Количество активированных массивов для хранения.
+    private int lengthBase;//Количество ячеек для хранения операции.
+    private ArrayNode head;//Первый элемент списка
+    private ArrayNode tail;//Последний элемент списка
+    private ArrayNode lastUsed;
+    private int lastUsedIndexStart;
+    private int lastUsedIndexEnd;
 
     private int countOptionCombination;//Количество комбинаций значений. Варианты комбинирования значений.
     private int[] maskOptionValue;//Количество различных значений на каждое действие. 1 - константа 2 - включить выключить
     public int countParam;//Количество параметров. Первая часть данных. Входные данные
     public int countOption;//Количество значений. Условная вторая часть данных. Сколько есть доступных действий
-    private int lengthBase;//Количество ячеек для хранения операции.
 
-    private ArrayOperationsNode head;//Первый элемент списка
-    private ArrayOperationsNode tail;//Последний элемент списка
-    private ArrayOperationsNode lastUsed;
-    private int lastUsedIndexStart;
-    private int lastUsedIndexEnd;
-    private int length;//Количество хранящихся операций
-    private int lengthList;//Количество активированных массивов для хранения.
     public Dataset(){
 
     }
@@ -33,13 +33,6 @@ public class Dataset {
         countOptionCombination = getMaxCountOptionCombination(maskOptionValue);
         lengthBase = countParam + countOptionCombination*2;
     }
-    int getMaxCountOptionCombination(int[] maskOptionValue){
-        int count = 1;
-        for(int i = 0; i < maskOptionValue.length; i++){
-            count *= maskOptionValue[i];
-        }
-        return  count;
-    }
     void addOperationByIndex(){
 
     }
@@ -48,19 +41,20 @@ public class Dataset {
             throw new NullPointerException("Массив данных пустой");
         if(array[0].length > lengthBase)
             throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
-        ArrayOperationsNode node;
-        if(lengthList == 0){//Если не инициализирован, то добавляем новую область
-            addNewNode(arraySizeMax);
-            node = searchNodeByIndex(0);
-        }else {
-            node = searchNodeByIndex(length);//???????????
+        ArrayNode node;
+        if(lengthList == 0){//Если не инициализирован, то добавляем новую область и подгружаем ее
+            addNewNode(arraySizeMax,lengthBase);
+            node = searchNodeByIndexElement(0);
+        }else {//Если уже есть доступные области, то ишим подходящую
+            addNewNode(arraySizeMax,lengthBase);//???????????
+            node = searchNodeByIndexElement(length);
         }
         for(int i = 0; i < array.length; i++){
-            if(node.getLength() >= node.getArraySizeMax()) {
-                addNewNode(arraySizeMax);
-                node = searchNodeByIndex(i);
+            if(node.getLength() >= node.getArraySizeMax() - coountReserveOperation) {
+                addNewNode(arraySizeMax,lengthBase);
+                node = searchNodeByIndexElement(length);
             }
-            node.addOperation(array[i]);
+            node.addElementToTail(array[i]);
             length++;
             lastUsedIndexEnd++;
         }
@@ -75,52 +69,55 @@ public class Dataset {
 
     }
     /** Найти область ответственную за операцию по номеру*/
-    ArrayOperationsNode searchNodeByIndex(int index){
+    ArrayNode searchNodeByIndexElement(int index){
         if(index > length || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
         if(lengthList <= 0)
             throw new ArrayIndexOutOfBoundsException("Область памяти не создана");
-        if(lengthList == 1) {
+        if(lengthList == 1) {//Создан только 1
             lastUsedIndexStart = 0;
             lastUsedIndexEnd = head.getLength();
             lastUsed = head;
             return head;
         }
-        if(index >= lastUsedIndexStart && index < lastUsedIndexEnd)
+        if(index >= lastUsedIndexStart && index < lastUsedIndexEnd)//Тот же что и в прошлый раз
             return lastUsed;
-        ArrayOperationsNode node;
+        if(index == lastUsedIndexEnd || (index >= lastUsedIndexEnd && index < lastUsedIndexEnd + lastUsed.next.getLength()))
+            return lastUsed.next;
+        ArrayNode node;
         int indexStart, indexEnd; //Начало и конец изучаемой области
         if(index > length / 2) {
             node = tail;
-            indexStart = length - node.getLength();
             indexEnd = length;
+            indexStart = indexEnd - node.length;
+
         }else{
             node = head;
             indexStart = 0;
             indexEnd = node.getLength();
         }
         for(int i = 0; i < lengthList; i++){
-            if(index > indexEnd){
+            if(index >= indexEnd && indexEnd != indexStart){//идем вперед
                 node = node.next;
-                indexStart += node.getLength();
-                indexEnd += node.getLength();
+                indexStart = indexEnd;
+                indexEnd = indexStart + node.getLength();
             }else{
-                if(index < indexStart){
-                    node = node.previous;
-                    indexStart -= head.getLength();
-                    indexEnd -=  head.getLength();
-                }else{
+                if(index >= indexStart && (index < indexEnd || indexEnd == indexStart)){//Это текущий элемент
                     lastUsedIndexStart = indexStart;
                     lastUsedIndexEnd = indexEnd;
                     lastUsed = node;
                     return node;
+                }else{//идем назад
+                    node = node.previous;
+                    indexEnd = indexStart;
+                    indexStart = indexStart - node.length;
                 }
             }
         }
-        throw new IllegalArgumentException("Произошла не предвиденная ошибка. Операция не найдена");
+        throw new IllegalArgumentException("Не удалось найти список который соответствовал бы этому индексу");
     }
-    ArrayOperationsNode addNewNode(int arraySizeMax){
-        ArrayOperationsNode  node =  new ArrayOperationsNode(arraySizeMax);
+    ArrayNode addNewNode(int arraySizeMax,int lengthBase){
+        ArrayNode  node =  new ArrayNode(arraySizeMax,lengthBase);
         if(lengthList == 0) {
             head = node;
             node.previous = node;
@@ -133,41 +130,70 @@ public class Dataset {
         lengthList += 1;
         return node;
     }
+    ArrayNode getNodeByIndex(int index){
+        if(index > lengthList || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        ArrayNode node;
+        if(index > lengthList / 2){
+            node = tail;
+            for(int i = lengthList-1; i > index; i--){
+                node = node.previous;
+            }
+        }else{
+            node = head;
+            for(int i = 0; i < index; i++){
+                node = node.next;
+            }
+        }
+        return node;
 
+    }
+    ArrayNode addNewNode2(int arraySizeMax,int lengthBase, int index){
+        ArrayNode  node =  new ArrayNode(arraySizeMax,lengthBase);
+        return node;
+    }
+
+    int getMaxCountOptionCombination(int[] maskOptionValue){
+        int count = 1;
+        for(int i = 0; i < maskOptionValue.length; i++){
+            count *= maskOptionValue[i];
+        }
+        return  count;
+    }
     /**Класс занимается хранением данных об массиве из операций.
      * На основе класса реализуется связанный список
      * Нужен для постепенного заполнения информации*/
-    class ArrayOperationsNode{
-        public ArrayOperationsNode next;
-        public ArrayOperationsNode previous;
-        private double[][] array;
-        // [{параметр1, параметр2, ...}{сумма комбинации1, положительная часть комбинации1, сумма комбинации 2, положительная часть комбинации2}]
-        private int length;//Количество активных ячеек
-        private int lengthBase;//Количество ячеек для хранения операции.
-        private int arraySizeMax;//Количество сколько ячеек может использоваться максимально
-        private int countParamThis;//Количество параметров. Первая часть данных. Входные данные
-        private int countOptionThis;//Количество значений. Условная вторая часть данных. Сколько есть доступных действий
-        private int countOptionCombinationThis;//Количество комбинаций значений. Варианты комбинирования значений .
-        ArrayOperationsNode(){
+    class ArrayNode{
+        public ArrayNode next;
+        public ArrayNode previous;
+        protected double[][] array;
+        protected int length;//Количество активных ячеек
+        protected int lengthBase;//Количество ячеек для хранения операции.
+        protected int arraySizeMax;//Количество сколько ячеек может использоваться максимально
+
+        protected int arrayHashcode = 0;//Нэш код. После каждого обновления должен отличатся от прошлого за счет изменения shiftB
+        protected boolean updateHashCode = false;//Переменная отвечает за сверку значений хеш кода. Должна быть true после пересчета и false кода приемник проверил
+        protected double shiftB = 0;
+
+        ArrayNode(){
 
         }
-
-        ArrayOperationsNode(int arraySizeMax){
+        ArrayNode(int arraySizeMax, int lengthBase){
             if(arraySizeMax < 0)
                 throw new IllegalArgumentException("Размер массива должен быть больше 0");
             this.arraySizeMax = arraySizeMax;
-            array  =  new double[arraySizeMax][countParam+countOptionCombination*2];
+            array  =  new double[arraySizeMax][lengthBase];
             length = 0;
-            lengthBase = countParam+countOptionCombination*2;
+            this.lengthBase = lengthBase;
         }
-        ArrayOperationsNode(int arraySizeMax, double[][] array){
+        ArrayNode(int arraySizeMax, int lengthBase, double[][] array){
             if(arraySizeMax < 0)
                 throw new IllegalArgumentException("Размер массива должен быть больше 0");
             if(array.length > arraySizeMax)
                 throw new IllegalArgumentException("Массив не может быть больше чем: "+arraySizeMax);
             this.arraySizeMax = arraySizeMax;
-            this.array = new double[arraySizeMax][countParam+countOptionCombination*2];
-            lengthBase = countParam+countOptionCombination*2;
+            this.array = new double[arraySizeMax][lengthBase];
+            this.lengthBase = lengthBase;
             for(int j = 0; j < array.length; j++) {
                 for (int i = 0; i < array[0].length; i++) {
                     this.array[j][i] = array[j][i];
@@ -176,12 +202,16 @@ public class Dataset {
             length=array.length;
         }
 
-        double[] getOperationByIndex(int index){
+        double[] getElementByIndex(int index){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
             if(index >= arraySizeMax || index < 0)
                 throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
             return array[index];
         }
-        double[] setOperationByIndex(int index, double[] operation){
+        double[] setElementByIndex(int index, double[] operation){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
             if(index >= arraySizeMax || index < 0)
                 throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
             if(array[0].length > lengthBase)
@@ -192,15 +222,24 @@ public class Dataset {
             return  array[index];
         }
 
-        double[][] getArray(){return array;}
+        double[][] getArray(){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
+            return array;
+        }
         double[][] setArray(double[][] array){
             if(array.length > arraySizeMax)
                 throw new IllegalArgumentException("Массив не может быть больше чем: "+arraySizeMax);
             if(array[0].length > lengthBase)
                 throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
+            if(this.array == null )
+                if(arraySizeMax != 0 && lengthBase != 0)
+                   this.array = new double[arraySizeMax][lengthBase];
+                else
+                    throw new ArrayIndexOutOfBoundsException("Массив не создан. Возможно следует передать параметры для создания");
             for(int j = 0; j < array.length; j++) {
                 for (int i = 0; i < array[0].length; i++) {
-                    array[j][i] = array[j][i];
+                    this.array[j][i] = array[j][i];
                 }
             }
             length = array.length;
@@ -214,7 +253,9 @@ public class Dataset {
         /**Количество ячеек для хранения операции.*/
         public int getLengthBase() {return lengthBase;}
 
-        double[] addOperationByIndex(int index, double[] operation){
+        double[] addElementByIndex(int index, double[] operation){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
             if(index >= arraySizeMax || index < 0)
                 throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
             if(length >= arraySizeMax)
@@ -228,9 +269,11 @@ public class Dataset {
             }
             array[index] = operation;
             length++;
-            return array[index];
+            return this.array[index];
         }
-        double[] addOperation(double[] operation){
+        double[] addElementToTail(double[] operation){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
             if(length >= arraySizeMax)
                 throw new ArrayIndexOutOfBoundsException("Превышен лимит по памяти в массиве. Установленный максимум = "+length);
             if(array[0].length > lengthBase)
@@ -239,7 +282,9 @@ public class Dataset {
             length++;
             return operation;
         }
-        double[] deleteOperationByIndex(int index){
+        double[] deleteElementByIndex(int index){
+            if(array == null)
+                throw new ArrayIndexOutOfBoundsException("Массив не создан");
             if(index >= arraySizeMax || index < 0)
                 throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
             double[] operation = array[index];
@@ -252,6 +297,7 @@ public class Dataset {
         @Override
         public int hashCode() {
             long result = 31;
+            result = 31 * result + (int) (Double.doubleToLongBits(shiftB) | (Double.doubleToLongBits(shiftB) >>> 32));
             result = 31 * result + arraySizeMax;
 
             for(int j = 0; j < length; j++){
@@ -263,10 +309,33 @@ public class Dataset {
         }
         @Override
         public Object clone() throws CloneNotSupportedException {
-            ArrayOperationsNode node  = new ArrayOperationsNode(arraySizeMax,array);
+            ArrayNode node  = new ArrayNode(arraySizeMax, lengthBase, array);
             node.next = next;
             node.previous = previous;
+            node.arrayHashcode = arrayHashcode;
+            node.shiftB = shiftB;
+            node.updateHashCode = updateHashCode;
             return node;
+        }
+    }
+
+    /**Класс занимается хранением данных об массиве из операций.
+     * Наследуется от ArrayNode.
+     * Описывает методы для работы с конкретным типом представления данных
+     */
+    class ArrayOperationsNode extends ArrayNode{
+        private int countParamThis;//Количество параметров. Первая часть данных. Входные данные
+        private int countOptionThis;//Количество значений. Условная вторая часть данных. Сколько есть доступных действий
+        private int countOptionCombinationThis;//Количество комбинаций значений. Варианты комбинирования значений .
+
+        ArrayOperationsNode(){
+            super();
+        }
+        ArrayOperationsNode(int arraySizeMax){
+            super(arraySizeMax, countParam+countOptionCombination*2);
+        }
+        ArrayOperationsNode(int arraySizeMax, double[][] array){
+            super(arraySizeMax, countParam+countOptionCombination*2,array);
         }
     }
 }
