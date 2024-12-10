@@ -1,9 +1,8 @@
-import functions.LinkedListTabulatedFunction;
+import Classification.ArrayNode;
 import functions.TabulatedFunction;
 
-import Сlassification.Dataset;
-import Сlassification.FunctionsArray;
-import Сlassification.TeСlassification;
+import Classification.Dataset;
+import Classification.TeClassification;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -15,7 +14,7 @@ public class Main {
     }
     /** Тестирование работы алгоритма.*/
     public static void  Test(double[][] dataBase, TabulatedFunction[] parametr){
-        double Ver = 1; //Вероятность
+        double Ver; //Вероятность
         int errors = 0; //Ошибки
         int correctPlus = 0; //Количество правильных прогнозов жизни
         int allPlus = 0; // Общие количество прогнозов жизни
@@ -51,7 +50,7 @@ public class Main {
      * 5 - случайность. Чем больше число тем ниже шансы выжить;*/
     public static void initDataSet(double[][] dataset, int[] arrayCountCombination){
         int v1, v2, v3, v4, v5;
-        int surv = 1;
+        int surv;
         for(int i =  0; i < dataset.length; i++){
             v1 = getRanNumber(1,6);
             v2 = getRanNumber(1,6);
@@ -73,7 +72,7 @@ public class Main {
             dataset[i][4] = v5;
             int[] combination = new int[arrayCountCombination.length];
             combination[0] = surv;
-            dataset[i][5+TeСlassification.getCombinationOption(arrayCountCombination,combination)] += 1;
+            dataset[i][5+ TeClassification.getCombinationOption(arrayCountCombination,combination)] += 1;
 
 
         }
@@ -81,7 +80,7 @@ public class Main {
     public static void main(String[] args) throws CloneNotSupportedException {
         int countParam = 5;
         int arrayCountCombination[] = new int[]{2};//сколько значений может принимать действие
-        int countCombination = TeСlassification.getCountCombinationOption(arrayCountCombination);
+        int countCombination = TeClassification.getCountCombinationOption(arrayCountCombination);
         /* Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
         double[][] dataset = new double[20][countParam+countCombination];
         initDataSet(dataset, arrayCountCombination);
@@ -94,31 +93,35 @@ public class Main {
             com += a*optionI;
             a *= uniqueValueI;*/
 
-        TeСlassification teСlassification = new TeСlassification(countParam, countCombination);
-        dataset = teСlassification.SummaryArray(dataset);//Преобразование массива с данными. Добавляет новые поля.
+        TeClassification teClassification = new TeClassification(countParam, countCombination);
+        dataset = teClassification.SummaryArray(dataset);//Преобразование массива с данными. Добавляет новые поля.
         //System.out.println("Array: \n"+FunctionsArray.getStringArray(dataset,5));
-        Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
-        dataset1.addOperation(dataset);
-        dataset1.addOperation(dataset);
-
-
-
+        //Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
+        //dataset1.addOperation(dataset);
+        //dataset1.addOperation(dataset);
+        //dataset1.addNodeToTail(10,9);
+        //dataset1.getNodeByIndex(0);
+        ArrayNode node = new ArrayNode(60,9);
+        node.setArray(dataset);
+        System.out.println(node);
+        node.addElements(dataset.length,dataset);
+        System.out.println(node);
 
 
 
         /* Зависимость вероятности от значения. [i][j] i - количество параметров. j - количество возможных значений*/
         //TabulatedFunction[][] parmSurvVer = new LinkedListTabulatedFunction[countCombination][countParam];
-        //teСlassification.getAnalyze(dataset,0,parmSurvVer);
+        //teClassification.getAnalyze(dataset,0,parmSurvVer);
 
 
         /* Нормализованное значение вероятности*/
         //TabulatedFunction[] AmplitudeParm = new TabulatedFunction[5];
         /*
-        teСlassification.getAnalyze(dataset,0, parmSurvVer);
-        teСlassification.getAnalyze(dataset,1, parmSurvVer);
-        teСlassification.getAnalyze(dataset,2, parmSurvVer);
-        teСlassification.getAnalyze(dataset,3, parmSurvVer);
-        teСlassification.getAnalyze(dataset,4, parmSurvVer);
+        teClassification.getAnalyze(dataset,0, parmSurvVer);
+        teClassification.getAnalyze(dataset,1, parmSurvVer);
+        teClassification.getAnalyze(dataset,2, parmSurvVer);
+        teClassification.getAnalyze(dataset,3, parmSurvVer);
+        teClassification.getAnalyze(dataset,4, parmSurvVer);
 
         */
         /*AmplitudeParm[0] = analyze(parmSurvVer[0]);

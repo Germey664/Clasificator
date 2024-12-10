@@ -1,4 +1,4 @@
-package Сlassification;
+package Classification;
 
 public class FunctionsArray {
 

@@ -1,17 +1,17 @@
-package Сlassification;
+package Classification;
 
 import functions.FunctionPoint;
 import functions.InappropriateFunctionPointException;
 import functions.LinkedListTabulatedFunction;
 import functions.TabulatedFunction;
 
-public class TeСlassification {
+public class TeClassification {
     private final int COUNT_MINIMAL_UNIQUE_VALUE = 3;
     private final int ALTER_INFINITY = 1000000;
 
     private int countParam;
     private int countCombination;
-    public TeСlassification(int countParam, int countCombination){
+    public TeClassification(int countParam, int countCombination){
         this.countParam = countParam;
         this.countCombination = countCombination;
     }
