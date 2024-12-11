@@ -44,17 +44,50 @@ public class ArrayNode{
         length=array.length;
     }
 
+    public double[][] getArray(){return array;}
+    /**Количество активных операций*/
+    public int getLength() {return length;}
+    /**Максимальное количество операций*/
+    public int getArraySizeMax() {return arraySizeMax;}
+    /**Количество ячеек для хранения операции.*/
+    public int getLengthBase() {return lengthBase;}
+
+
+    public double[] addElementToTail(double[] operation) throws ArrayIndexOutOfBoundsException{
+        if(array == null)
+            throw new NullPointerException("Массив не создан");
+        if(operation.length > lengthBase)
+            throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
+        if(length >= arraySizeMax)
+            throw new ArrayIndexOutOfBoundsException("Установлена максимальный размер. Массив не может быть больше чем: "+arraySizeMax);
+        array[length] = operation;
+        length++;
+        return operation;
+    }
+    public double[] deleteElementToTail(){
+        if(array == null)
+            throw new NullPointerException("Массив не создан");
+        if(length == 0)
+            return null;
+        double[] operation = new double[lengthBase];
+        for(int i = 0; i < operation.length; i++)
+            operation[i] = array[length-1][i];
+        array[length-1] = new double[lengthBase];
+        length = 0;
+        return operation;
+    }
+
     public double[] getElementByIndex(int index){
         if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не создан");
-        if(index >= arraySizeMax || index < 0)
+            throw new NullPointerException("Массив не создан");
+        if(index >= length || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
         return array[index];
     }
     public double[] setElementByIndex(int index, double[] operation){
         if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не создан");
-        if(index >= arraySizeMax || index < 0)
+            throw new NullPointerException("Массив не создан");
+        if(index >= length || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
         if(operation.length > lengthBase)
             throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
@@ -63,13 +96,63 @@ public class ArrayNode{
         }
         return  array[index];
     }
+    public double[] addElementByIndex(int index, double[] operation) throws ArrayIndexOutOfBoundsException{
+        if(array == null)
+            throw new NullPointerException("Массив не создан");
+        if(operation == null)
+            throw new NullPointerException("Операция не инициализированная");
+        if(index >= length || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        if(operation.length > lengthBase)
+            throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
+        if(length >= arraySizeMax)
+            throw new ArrayIndexOutOfBoundsException("Установлена максимальный размер. Массив не может быть больше чем: "+arraySizeMax);
+        for (int j = length - 1; j >= index; j--){
+            for (int i = 0; i < operation.length; i++) {
+                array[j+1][i] = array[j][i];
+            }
+        }
+        array[index] = operation;
+        length++;
+        return this.array[index];
+    }
+    public double[] deleteElementByIndex(int index){
+        if(array == null)
+            throw new NullPointerException("Массив не создан");
+        if(index > length || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        if (length == 0)
+            return null;
+        double[] operation = array[index];
+        for (int i = index; i < length; i++){
+            array[i] = array[i+1];
+        }
+        length--;
+        if (length<0)length=0;
+        return operation;
+    }
 
-    public double[][] getArray(){
-        return array;
+    public double[][] getElements(int indexStart, int indexEnd){
+        if(array == null)
+            throw new NullPointerException("Массив не создан");
+        if(indexStart >= length || indexStart < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexStart+"]");
+        if(indexEnd+1 >= length || indexEnd+1 < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexEnd+"]");
+        if(indexEnd - indexStart < 0 )
+            throw new ArrayIndexOutOfBoundsException("Область для получения не может быть отрицательна");
+        int diff = indexEnd - indexStart+1;
+        double[][] arrayNew = new double[diff][lengthBase];
+        for(int j = 0; j < diff; j++) {
+            for (int i = 0; i < lengthBase; i++) {
+                arrayNew[j][i] = array[j+indexStart][i];
+            }
+        }
+        return arrayNew;
     }
     public double[][] setArray(double[][] array){
         if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не инициализирован");
+            throw new NullPointerException("Массив не инициализирован");
         if(array.length > arraySizeMax)
             throw new IllegalArgumentException("Массив не может быть больше чем: "+arraySizeMax);
         if(array[0].length > lengthBase)
@@ -87,46 +170,7 @@ public class ArrayNode{
         length = array.length;
         return array;
     }
-
-    /**Количество активных операций*/
-    public int getLength() {return length;}
-    /**Максимальное количество операций*/
-    public int getArraySizeMax() {return arraySizeMax;}
-    /**Количество ячеек для хранения операции.*/
-    public int getLengthBase() {return lengthBase;}
-
-    public double[] addElementByIndex(int index, double[] operation){
-        if(array == null)
-            throw new NullPointerException("Массив не создан");
-        if(operation == null)
-            throw new NullPointerException("Операция не инициализированная");
-        if(index >= arraySizeMax || index < 0)
-            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        if(operation.length > lengthBase)
-            throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
-        if(length >= arraySizeMax)
-            return null;
-        for (int j = length - 1; j >= index; j--){
-            for (int i = 0; i < operation.length; i++) {
-                array[j+1][i] = array[j][i];
-            }
-        }
-        array[index] = operation;
-        length++;
-        return this.array[index];
-    }
-    public double[] addElementToTail(double[] operation){
-        if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не создан");
-        if(operation.length > lengthBase)
-            throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
-        if(length >= arraySizeMax)
-            return null;
-        array[length] = operation;
-        length++;
-        return operation;
-    }
-    public double[][] addElements(int indexStart, double[][] array){
+    public double[][] addElements(int indexStart, double[][] array) throws ArrayIndexOutOfBoundsException{
         if(this.array == null)
             throw new NullPointerException("Массив не создан");
         if(array == null)
@@ -134,7 +178,7 @@ public class ArrayNode{
         if(array[0].length > lengthBase)
             throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
         if(length + array.length >= arraySizeMax)
-            return null;
+            throw new ArrayIndexOutOfBoundsException("Установлена максимальный размер. Массив не может быть больше чем: "+arraySizeMax);
         for (int j = length + array.length; j >= indexStart+array.length; j--){
             for (int i = 0; i < array[0].length; i++) {
                 this.array[j][i] = this.array[j-array.length][i];
@@ -148,29 +192,17 @@ public class ArrayNode{
         length+=array.length;
         return this.array;
     }
-    public double[] deleteElementByIndex(int index){
-        if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не создан");
-        if(index >= arraySizeMax || index < 0)
-            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        double[] operation = array[index];
-        for (int i = index; i < length; i++){
-            array[i] = array[i+1];
-        }
-        length--;
-        return operation;
-    }
-
     public double[][] deleteElements(int indexStart, int indexEnd){
         if(array == null)
-            throw new ArrayIndexOutOfBoundsException("Массив не создан");
-        if(indexStart >= arraySizeMax || indexStart < 0)
+            throw new NullPointerException("Массив не создан");
+        if(indexStart > length || indexStart < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexStart+"]");
-        if(indexEnd+1 >= arraySizeMax || indexEnd+1 < 0)
+        if(indexEnd+1 > length || indexEnd+1 < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexEnd+"]");
         if(indexEnd - indexStart < 0 )
             throw new ArrayIndexOutOfBoundsException("Область для удаления не может быть отрицательна");
         int diff = indexEnd - indexStart+1;
+        if (length == 0) return null;
         double[][] operation = new double[diff][lengthBase];
         for (int i = 0; i < operation.length; i++){
             operation[i] = array[indexStart+i];

@@ -82,7 +82,7 @@ public class Main {
         int arrayCountCombination[] = new int[]{2};//сколько значений может принимать действие
         int countCombination = TeClassification.getCountCombinationOption(arrayCountCombination);
         /* Массив хранит в себе записи о произведенных действиях. [i][] - номер действия [][i] параметр + действие(5+1)=6*/
-        double[][] dataset = new double[20][countParam+countCombination];
+        double[][] dataset = new double[5][countParam+countCombination];
         initDataSet(dataset, arrayCountCombination);
         /*
         [] [{p1, p2, p3, p4, p5}{com1, com2, com3, com4, ..., comN}];
@@ -96,17 +96,21 @@ public class Main {
         TeClassification teClassification = new TeClassification(countParam, countCombination);
         dataset = teClassification.SummaryArray(dataset);//Преобразование массива с данными. Добавляет новые поля.
         //System.out.println("Array: \n"+FunctionsArray.getStringArray(dataset,5));
-        //Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
-        //dataset1.addOperation(dataset);
-        //dataset1.addOperation(dataset);
-        //dataset1.addNodeToTail(10,9);
-        //dataset1.getNodeByIndex(0);
-        ArrayNode node = new ArrayNode(60,9);
-        node.setArray(dataset);
-        System.out.println(node);
-        node.addElements(dataset.length,dataset);
-        System.out.println(node);
+        Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
+        System.out.println(dataset1);
+        ArrayNode node1 = new ArrayNode(20,9);
+        ArrayNode node2 = new ArrayNode(25,9);
+        ArrayNode node3 = new ArrayNode(30,9);
+        ArrayNode node4 = new ArrayNode(35,9);
+        node1.setArray(dataset);
+        node3.setArray(dataset);
+        dataset1.addNodeToTail(node1);
+        dataset1.addNodeToTail(node2);
+        dataset1.addNodeToTail(node3);
+        System.out.println(dataset1.searchIndexByNode(node1));
+        System.out.println(dataset1);
 
+        //System.out.println(dataset1);
 
 
         /* Зависимость вероятности от значения. [i][j] i - количество параметров. j - количество возможных значений*/
