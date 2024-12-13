@@ -86,7 +86,7 @@ public class Main {
         initDataSet(dataset, arrayCountCombination);
         /*
         [] [{p1, p2, p3, p4, p5}{com1, com2, com3, com4, ..., comN}];
-        N = UniqueValue1 * UniqueValue1 * ...; Количество комбинаций. Уникальное значения действия 1  * Уникальное значения действия 2 ...
+        N = UniqueValue1 * UniqueValue1 * ...; Количество комбинаций. Уникальное значения действия 1 * Уникальное значения действия 2 ...
          int a = 1;
          int com = option1;//Выбор действия
          for()
@@ -97,18 +97,39 @@ public class Main {
         dataset = teClassification.SummaryArray(dataset);//Преобразование массива с данными. Добавляет новые поля.
         //System.out.println("Array: \n"+FunctionsArray.getStringArray(dataset,5));
         Dataset dataset1 = new Dataset(countParam, arrayCountCombination);
-        System.out.println(dataset1);
         ArrayNode node1 = new ArrayNode(20,9);
         ArrayNode node2 = new ArrayNode(25,9);
         ArrayNode node3 = new ArrayNode(30,9);
         ArrayNode node4 = new ArrayNode(35,9);
         node1.setArray(dataset);
         node3.setArray(dataset);
-        dataset1.addNodeToTail(node1);
-        dataset1.addNodeToTail(node2);
-        dataset1.addNodeToTail(node3);
-        System.out.println(dataset1.searchIndexByNode(node1));
+        dataset1.addNodeToTail(1,9);
+        dataset1.addNodeToTail(2,9);
+        dataset1.addNodeToTail(3,9);
+        dataset1.addNodeToTail(4,9);
+        dataset1.addNodeToTail(5,9);
+        dataset1.addNodeToTail(6,9);
+
+        dataset1.addNodeByIndex(0,(ArrayNode) node1.clone());
+        dataset1.addNodeByIndex(2,(ArrayNode) node2.clone());
+        dataset1.addNodeByIndex(7,(ArrayNode) node3.clone());
+        dataset1.addNodeByIndex(9,(ArrayNode) node1.clone());
         System.out.println(dataset1);
+        //dataset1.deleteNodeByIndex(1);
+        //dataset1.deleteNodeByIndex(8);
+        //System.out.println(dataset1);
+
+        System.out.println(dataset1.getNodeByIndex(0));
+        System.out.println(dataset1.getNodeByIndex(1));
+        System.out.println(dataset1.getNodeByIndex(2));
+        System.out.println(dataset1.getNodeByIndex(3));
+
+        System.out.println(dataset1.searchNodeByIndexElement(0));
+        System.out.println(dataset1.searchNodeByIndexElement(4));
+        System.out.println(dataset1.searchNodeByIndexElement(5));
+        System.out.println(dataset1.searchNodeByIndexElement(9));
+        System.out.println(dataset1.searchNodeByIndexElement(10));
+        System.out.println(dataset1.searchNodeByIndexElement(14));
 
         //System.out.println(dataset1);
 

@@ -7,7 +7,7 @@ package Classification;
 public class ArrayOperationsNode extends ArrayNode{
     private int countParamThis;//Количество параметров. Первая часть данных. Входные данные
     private int countOptionThis;//Количество значений. Условная вторая часть данных. Сколько есть доступных действий
-    private int countOptionCombinationThis;//Количество комбинаций значений. Варианты комбинирования значений .
+    private int countOptionCombinationThis;//Количество комбинаций значений. Варианты комбинирования значений.
 
     ArrayOperationsNode(){
         super();
@@ -16,6 +16,6 @@ public class ArrayOperationsNode extends ArrayNode{
         super(arraySizeMax, countParam+countOptionCombination*2);
     }
     ArrayOperationsNode(int arraySizeMax, int countParam, int countOptionCombination, double[][] array){
-        super(arraySizeMax, countParam+countOptionCombination*2,array);
+        super(arraySizeMax, array.length, countParam+countOptionCombination*2,array);
     }
 }

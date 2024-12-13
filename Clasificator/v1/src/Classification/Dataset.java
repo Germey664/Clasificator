@@ -1,19 +1,22 @@
 package Classification;
 
+import static java.lang.Math.abs;
+
 public class Dataset {
     private int arraySizeMax = 10;//Сколько по стандарту должен иметь размер 1 массив.
-    private int coountReserveOperation = 2; //Сколько оставлять пустых операций, для последующих операций.
+    private int countReserveOperation = 2; //Сколько оставлять пустых операций, для последующих операций.
 
     private int length;//Количество хранящихся операций
     private int lengthList;//Количество активированных массивов для хранения.
-    private int lengthBase;//Количество ячеек для хранения операции.
+    private int lengthBase;//Количество ячеек для хранения одной операции.
     private ArrayNode head;//Первый элемент списка
     private ArrayNode tail;//Последний элемент списка
 
-    private ArrayNode lastUsed;//Последний обновленный элемент. Использование может ускорить работу
-    private int lastUsedIndexStart;
-    private int lastUsedIndexEnd;
-    private int lastUsedIndex;
+    private boolean lastUsedActivate = true;//Нужно ли использовать область памяти lastUsed. Она может работать не стабильно.
+    private ArrayNode lastUsed;//Последний использованный элемент. Применяется в ускорении поиска элементов.
+    private boolean lastUsedCorrect = false;//Если данные не надежны, а изменить их на корректные не получается, то нужно поставить false
+    private int lastUsedIndexStart;//Используется для поиска операций
+    private int lastUsedIndex;//Используется для поиска индексов областей
 
     private int countOptionCombination;//Количество комбинаций значений. Варианты комбинирования значений.
     private int[] maskOptionValue;//Количество различных значений на каждое действие. 1 - константа 2 - включить выключить
@@ -37,30 +40,127 @@ public class Dataset {
         lengthBase = countParam + countOptionCombination*2;
     }
 
+    /** Короткая запись. Заполняет параметры lastUsed переданными параметрами.*/
+    void initLastUsed(ArrayNode node, int start, int index){
+        if(!lastUsedActivate)
+            return;
+        lastUsed = node;
+        lastUsedIndex = index;
+        lastUsedIndexStart = start;
+        lastUsedCorrect = true;
+    }
+
+    /** Ищет индекс ближайшей области среди областей head, tail, lastUsed*/
+    public int searchNearbyIndexByNode(int index){
+        if(index > lengthList || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        if (lengthList== 0)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && index == lastUsedIndex){
+            return lastUsedIndex;
+        }
+        int indexDistHead = index;
+        int indexDistTail = lengthList - 1 - index;
+        int indexDistLast = abs(lastUsedIndex - index);
+        if(!lastUsedCorrect)
+            indexDistLast = 999999999;
+        if(indexDistHead <= indexDistLast && indexDistHead <= indexDistTail){
+            return  0;
+        }
+        if(indexDistTail <= indexDistLast && indexDistTail < indexDistHead){
+            return lengthList - 1;
+        }
+        if(indexDistLast < indexDistHead && indexDistLast < indexDistTail){
+            return lastUsedIndex;
+        }
+        return -1;
+    }
+    /** Ищет индекс первого действия ближайшей области среди областей head, tail, lastUsed*/
+    public int searchNearbyIndexStartByNode(int index){
+        if(index > lengthList || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        if (lengthList== 0)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && index == lastUsedIndex){
+            return lastUsedIndexStart;
+        }
+        int indexDistHead = index;
+        int indexDistTail = lengthList - 1 - index;
+        int indexDistLast = abs(lastUsedIndex - index);
+        if(!lastUsedCorrect)
+            indexDistLast = 999999999;
+        if(indexDistHead <= indexDistLast && indexDistHead <= indexDistTail){
+            return  0;
+        }
+        if(indexDistTail <= indexDistLast && indexDistTail < indexDistHead){
+            return length - tail.getLength();
+        }
+        if(indexDistLast < indexDistHead && indexDistLast < indexDistTail){
+            return lastUsedIndexStart;
+        }
+        return -1;
+    }
+    /** Возвращает область: head, tail, lastUsed от индекса 0, lengthList - 1, ?*/
+    public ArrayNode searchNearbyNodeByItIndex(int index){
+        if(index == 0)
+            return head;
+        else if(index == lengthList - 1)
+            return tail;
+        else
+            return lastUsed;
+    }
+    /** Получить область по её индексу. Использует lastUsed*/
     public ArrayNode getNodeByIndex(int index){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        ArrayNode node;
         if (lengthList== 0)
             throw new NullPointerException("Массив не инициализирован");
-        if(index > lengthList / 2){
-            node = tail;
-            for(int i = lengthList-1; i > index; i--){
-                node = node.previous;
-            }
-        }else{
-            node = head;
-            for(int i = 0; i < index; i++){
+
+        if(lastUsedCorrect && index == lastUsedIndex){
+            return lastUsed;
+        }
+
+        int indexNodeStart = searchNearbyIndexByNode(index);
+        int indexStart = searchNearbyIndexStartByNode(index);
+        ArrayNode node = searchNearbyNodeByItIndex(indexNodeStart);
+        if(index > indexNodeStart){
+            for(int i = indexNodeStart; i < index; i++){
+                indexStart += node.getLength();
                 node = node.next;
             }
+        }else{
+            for (int i = indexNodeStart; i > index; i--) {
+                indexStart -= node.getLength();
+                node = node.previous;
+            }
         }
+        initLastUsed(node,indexStart,index);
         return node;
     }
+    /** Возвращает индекс в списке для переданной области (не пустая). Если область не найдена создает исключение*/
+    public int searchIndexByNode(ArrayNode node) throws ArrayIndexOutOfBoundsException{
+        if(node == null)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lengthList <= 0)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && node == lastUsed)
+            return lastUsedIndex;
+        ArrayNode iNode = head;
+        int i;
+        for (i = 0; i < lengthList; i++){
+            if(node == iNode)
+                return i;
+            iNode = iNode.next;
+        }
+        throw new ArrayIndexOutOfBoundsException("Не удалось найти объект в списке");
+    }
 
+    /** Добавить пустую область со стандартными размерами в конец списка. Возвращает добавленную область*/
     public ArrayNode addNodeToTail(){
         ArrayNode  node =  new ArrayNode(arraySizeMax,lengthBase);
         return addNodeToTail(node);
     }
+    /** Добавить пустую область с нестандартными размерами в конец списка. Возвращает добавленную область*/
     public ArrayNode addNodeToTail(int arraySizeMax, int lengthBase){
         if(arraySizeMax < 0)
             throw new IllegalArgumentException("ArraySizeMax не может быть отрицательным");
@@ -69,6 +169,7 @@ public class Dataset {
         ArrayNode  node =  new ArrayNode(arraySizeMax,lengthBase);
         return addNodeToTail(node);
     }
+    /** Добавить переданную область в конец списка (не пустая). Возвращает добавленную область*/
     public ArrayNode addNodeToTail(ArrayNode node){
         if(node == null)
             throw new NullPointerException("Массив не инициализирован");
@@ -86,6 +187,7 @@ public class Dataset {
         return node;
     }
 
+    /** Добавить пустую область со стандартными размерами в список по индексу. Возвращает добавленную область*/
     public ArrayNode addNodeByIndex(int index){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
@@ -94,6 +196,7 @@ public class Dataset {
         ArrayNode node = new ArrayNode(arraySizeMax,lengthBase);
         return addNodeByIndex(index,node);
     }
+    /** Добавить пустую область с нестандартными размерами в список по индексу. Возвращает добавленную область*/
     public ArrayNode addNodeByIndex(int index, int arraySizeMax, int lengthBase){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
@@ -106,6 +209,7 @@ public class Dataset {
         ArrayNode node = new ArrayNode(arraySizeMax,lengthBase);
         return addNodeByIndex(index,node);
     }
+    /** Добавить переданную область в список по индексу (не пустая). Возвращает добавленную область*/
     public ArrayNode addNodeByIndex(int index, ArrayNode  nodeNew){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
@@ -123,17 +227,32 @@ public class Dataset {
         nodeLast.previous = nodeNew;
         lengthList++;
         length+=nodeNew.getLength();
+        if(lastUsedActivate && lastUsedCorrect){
+            if(index < lastUsedIndex+1){
+                lastUsedIndex++;
+                lastUsedIndexStart+=nodeNew.getLength();
+            }
+        }
         return  nodeNew;
     }
 
+    /** Изменяет область в списке по индексу на переданную область (не пустая). Возвращает переданную область*/
     public ArrayNode setNodeByIndex(int index, ArrayNode nodeNew){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        if(lengthList <= 0)
+        if(lengthList == 0)
             throw new NullPointerException("Массив не инициализирован");
         ArrayNode nodeLast = getNodeByIndex(index);
         length-=nodeLast.getLength();
         length+=nodeNew.getLength();
+        if(lastUsedActivate && lastUsedCorrect){
+            if(index < lastUsedIndex){
+                lastUsedIndexStart-=nodeLast.getLength();
+                lastUsedIndexStart+=nodeNew.getLength();
+            }
+            if(index == lastUsedIndex)
+                lastUsed = nodeNew;
+        }
         if(lengthList == 1){
             head = nodeNew;
             tail = nodeNew;
@@ -161,15 +280,23 @@ public class Dataset {
         nodeNew.previous.next = nodeNew;
         return nodeNew;
     }
-
+    /** Удаляет область из списка по индексу. Возвращает удаленную область*/
     public ArrayNode deleteNodeByIndex(int index){
         if(index > lengthList || index < 0)
             throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        if(lengthList <= 0)
+        if(lengthList == 0)
             return null;
         ArrayNode nodeLast = getNodeByIndex(index);
         lengthList--;
         length-=nodeLast.getLength();
+        if(lastUsedActivate && lastUsedCorrect){
+            if(index < lastUsedIndex){
+                lastUsedIndex--;
+                lastUsedIndexStart-=nodeLast.getLength();
+            }
+            if(index == lastUsedIndex)
+                lastUsedCorrect = false;
+        }
         if (lengthList == 1) return head;
         if (lengthList<0)lengthList=0;
 
@@ -187,41 +314,136 @@ public class Dataset {
         return nodeLast;
     }
 
-    public int searchIndexByNode(ArrayNode node) throws ArrayIndexOutOfBoundsException{
-        if(node == null)
+
+    /** Ищет индекс ближайшей области среди областей head, tail, lastUsed*/
+    public int searchNearbyIndex(int indexElement){
+        if(indexElement > length || indexElement < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexElement+"]");
+        if (lengthList== 0)
             throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && indexElement == lastUsedIndexStart){
+            return lastUsedIndex;
+        }
+        int indexDistHead = indexElement;
+        int indexDistTail = length - indexElement;
+        int indexDistLast = abs(lastUsedIndex - indexElement);
+        if(!lastUsedCorrect)
+            indexDistLast = 999999999;
+        if(indexDistHead <= indexDistLast && indexDistHead <= indexDistTail){
+            return  0;
+        }
+        if(indexDistTail <= indexDistLast && indexDistTail < indexDistHead){
+            return lengthList - 1;
+        }
+        if(indexDistLast < indexDistHead && indexDistLast < indexDistTail){
+            return lastUsedIndex;
+        }
+        return -1;
+    }
+    /** Ищет индекс первого действия ближайшей области среди областей head, tail, lastUsed*/
+    public int searchNearbyIndexStart(int indexElement){
+        if(indexElement > length || indexElement < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+indexElement+"]");
+        if (lengthList== 0)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && indexElement == lastUsedIndexStart){
+            return lastUsedIndexStart;
+        }
+        int indexDistHead = indexElement;
+        int indexDistTail = length - 1 - indexElement;
+        int indexDistLast = abs(lastUsedIndex - indexElement);
+        if(!lastUsedCorrect)
+            indexDistLast = 999999999;
+        if(indexDistHead <= indexDistLast && indexDistHead <= indexDistTail){
+            return  0;
+        }
+        if(indexDistTail <= indexDistLast && indexDistTail < indexDistHead){
+            return length - tail.getLength();
+        }
+        if(indexDistLast < indexDistHead && indexDistLast < indexDistTail){
+            return lastUsedIndexStart;
+        }
+        return -1;
+    }
+    /** Получить индекс первой операции для области по общему массиву. Передается индекс области. Использует lastUsed*/
+    public int getIndexStartByNode(int index){
+        if(index > lengthList || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
+        if (lengthList== 0)
+            throw new NullPointerException("Массив не инициализирован");
+        if(lastUsedCorrect && index == lastUsedIndex)
+            return lastUsedIndexStart;
+
+        int indexNodeStart = searchNearbyIndexByNode(index);
+        int indexStart = searchNearbyIndexStartByNode(index);
+        ArrayNode node = searchNearbyNodeByItIndex(indexNodeStart);
+        if(index > indexNodeStart){
+            for(int i = indexNodeStart; i < index; i++){
+                indexStart += node.getLength();
+                node = node.next;
+            }
+        }else{
+            for (int i = indexNodeStart; i > index; i--) {
+                indexStart -= node.getLength();
+                node = node.previous;
+            }
+        }
+        initLastUsed(node,indexStart,index);
+        return indexStart;
+    }
+    /** Найти область в которой находится операция по индексу.*/
+    public ArrayNode searchNodeByIndexElement(int index){
+        if(index > length || index < 0)
+            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
         if(lengthList <= 0)
             throw new NullPointerException("Массив не инициализирован");
-        ArrayNode iNode = head;
-        int i;
-        for (i = 0; i < lengthList; i++){
-            if(node == iNode)
-                return i;
-            iNode = iNode.next;
+        if(lastUsedCorrect)
+            if(index >= lastUsedIndexStart && (index < lastUsedIndexStart+lastUsed.getLength()))
+                return lastUsed;
+        int indexNodeStart = searchNearbyIndex(index);
+        int indexStart = searchNearbyIndexStart(index);
+        ArrayNode node = searchNearbyNodeByItIndex(indexNodeStart);
+        if(index > indexStart){
+            indexStart+=node.getLength();
+            for(; indexStart + node.getLength() < index+1; indexStart+=node.getLength()){
+                indexNodeStart++;
+                node = node.next;
+            }
+        }else{
+            for (int i = indexStart; i > index; i-=node.getLength()) {
+                node = node.previous;
+                indexNodeStart--;
+            }
         }
-            throw new ArrayIndexOutOfBoundsException("Не удалось найти объект в списке");
+        initLastUsed(node,indexStart,indexNodeStart);
+        return node;
     }
 
-    void initLastUsed(ArrayNode node, int start){
-        lastUsed = node;
-        lastUsedIndexStart = start;
-        lastUsedIndexEnd = start + node.getLength();
+    int getIndexStartByIndexNode(int index){
+        return 0;
     }
-    void initLastUsed(ArrayNode node){
+
+    void getOperationByIndex(int index){
+
+    }
+    void setOperationByIndex(){
 
     }
     void addOperationByIndex(){
 
     }
+    void deleteOperationByIndex(){
+
+    }
     /**Функция добавляет данные в конец. Сразу создает новые ноды*/
-    public void addOperation(double[][] array){
+    /*public void addOperationsToTail(double[][] array){
         if(array == null)
             throw new NullPointerException("Массив данных пустой");
         if(array[0].length > lengthBase)
             throw new IllegalArgumentException("Количество параметров не может быть больше чем: "+lengthBase);
         ArrayNode node = addNodeToTail(arraySizeMax,lengthBase);
         for(int i = 0; i < array.length; i++){
-            if(node.getLength() >= node.getArraySizeMax() - coountReserveOperation) {
+            if(node.getLength() >= node.getArraySizeMax() - countReserveOperation) {
                 node = addNodeToTail(arraySizeMax, lengthBase);
             }
             node.addElementToTail(array[i]);
@@ -229,7 +451,7 @@ public class Dataset {
             lastUsedIndexEnd++;
         }
     }
-    public void addOperation(int indexStart, double[][] array){
+    public void addOperations(int indexStart, double[][] array){
         if(array == null)
             throw new NullPointerException("Массив данных пустой");
         if(array[0].length > lengthBase)
@@ -241,68 +463,30 @@ public class Dataset {
         if(node == null)
             node = addNodeToTail(arraySizeMax,lengthBase);
         for(int i = 0; i < array.length; i++){
-            if(node.getLength() >= node.getArraySizeMax() - coountReserveOperation) {
+            if(node.getLength() >= node.getArraySizeMax() - countReserveOperation) {
                 node = addNodeToTail(arraySizeMax, lengthBase);
-                initLastUsed(node,length);
             }
             node.addElementToTail(array[i]);
             length++;
             lastUsedIndexEnd++;
         }
     }
-    void deleteOperationByIndex(){
-
+*/
+    public double[][] getOperations(int indexStart, int indexEnd){
+        return null;
     }
-    void getOperationByIndex(int index){
-
+    public double[][] deleteOperations(int indexStart, int indexEnd){
+        return null;
     }
+    public double[][] setOperations(int indexStart, double[][] array){
+        return null;
+    }
+
+
     void searchOperation(){
 
     }
-    /** Найти область ответственную за операцию по номеру*/
-    ArrayNode searchNodeByIndexElement(int index){
-        if(index > length || index < 0)
-            throw new ArrayIndexOutOfBoundsException("Выход за пределы массива index["+index+"]");
-        if(lengthList <= 0)
-            return null;
-        if(index >= lastUsedIndexStart && (index < lastUsedIndexEnd||lastUsedIndexStart == lastUsedIndexEnd))//Прошлый использованный подходит. Операции могут устанавливать это значение
-            return lastUsed;
-        ArrayNode node;
-        int indexStart, indexEnd; //Начало и конец изучаемой области
-        //Откуда будет начинать работу. От lastUsed, от head, от tail.
-        if ((index - lastUsedIndexEnd <= (length/lengthList)) && (index - lastUsedIndexStart >= -(length/lengthList))) {//Проверяем область на близость lastUsed
-            node = lastUsed;
-            indexStart = lastUsedIndexStart;
-            indexEnd = lastUsedIndexEnd;
-        }else {
-            if(index > length / 2) {
-                node = tail;
-                indexEnd = length;
-                indexStart = indexEnd - node.length;
-            }else{
-                node = head;
-                indexStart = 0;
-                indexEnd = node.getLength();
-            }
-        }
-        for(int i = 0; i < lengthList; i++){
-            if(index >= indexEnd && indexEnd != indexStart){//идем вперед
-                node = node.next;
-                indexStart = indexEnd;
-                indexEnd = indexStart + node.getLength();
-            }else{
-                if(index >= indexStart && (index < indexEnd || indexEnd == indexStart)){//Это текущий элемент
-                    initLastUsed(node,indexStart);
-                    return node;
-                }else{//идем назад
-                    node = node.previous;
-                    indexEnd = indexStart;
-                    indexStart = indexStart - node.length;
-                }
-            }
-        }
-        return null;
-    }
+
 
 
 
@@ -317,12 +501,13 @@ public class Dataset {
 
     public String toString() {
         String s =  "Length list: "+lengthList+", length: "+length+", length base: "+lengthBase+"\n";
-        s+=         "Array max size: "+arraySizeMax+", count reserve operation: "+coountReserveOperation+"\n";
+        s+=         "Array max size: "+arraySizeMax+", count reserve operation: "+ countReserveOperation +"\n";
         s+=         "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n";
         ArrayNode node = head;
         for (int i = 0; i < lengthList; i++) {
+            s += "Node: "+ i +"\n";
             s +=  node;
-            s+="------------------------------------------------------\n";
+            s +="------------------------------------------------------\n";
             node = node.next;
         }
         s+=         "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n";
