@@ -1,9 +1,9 @@
 package Classification;
 
-import functions.FunctionPoint;
-import functions.InappropriateFunctionPointException;
-import functions.LinkedListTabulatedFunction;
-import functions.TabulatedFunction;
+import Functions.FunctionPoint;
+import Functions.InappropriateFunctionPointException;
+import Functions.LinkedListTabulatedFunction;
+import Functions.TabulatedFunction;
 
 public class TeClassification {
     private final int COUNT_MINIMAL_UNIQUE_VALUE = 3;
